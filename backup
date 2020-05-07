@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No color
+
+# Show usage
+if [ -z "$1" ] ; then
+  echo -e "Usage: sudo ./backup ${YELLOW}sda3${NC}"
+  echo -e "Creates ${YELLOW}label.tar.gz${NC} with ${YELLOW}label${NC} of selected partition"
+  exit
+fi
+
+# Selected partition
+PARTITION=$1
+DEVICE=/dev/$PARTITION
+
+# Extract partition label by selected partition
+LABEL=`lsblk -fl | grep $PARTITION | awk '{print \$3}'`
+if [ -z "$LABEL" ] ; then
+  echo -e ${RED}Partition ${YELLOW}$PARTITION${RED} not found${NC}
+  exit
+fi
+
+# Backup selected partition
+mkdir -p $LABEL
+mount $DEVICE $LABEL
+
+echo -e ${GREEN}Start backup partition at `date`...${NC}
+tar cfp - $LABEL | pigz -1 > $LABEL.tar.gz
+echo -e ${GREEN}Done at `date`${NC}
+
+umount $LABEL
+rm -d $LABEL

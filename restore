@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No color
+
+# Show usage
+if [ -z "$1" ] || [ -z "$2" ] ; then
+  echo -e "Usage: sudo ./restore ${YELLOW}sda3 label.tar.gz${NC}"
+  echo -e "Formats selected partition to ext4 and writes content of ${YELLOW}label.tar.gz${NC} with new partition ${YELLOW}label${NC}"
+  exit
+fi
+
+# Selected partition
+PARTITION=$1
+DEVICE=/dev/$PARTITION
+
+# Check partition existance
+PARTITION_ROW=`lsblk -fl | grep $PARTITION`
+if [ -z "$PARTITION_ROW" ] ; then
+  echo -e ${RED}Partition ${YELLOW}$PARTITION${RED} not found${NC}
+  exit
+fi
+
+# Extract partition label from file name
+FILE=$2
+LABEL=`echo $(basename $FILE) | cut -d "." -f 1`
+
+# Restore FILE to selected partition
+mkfs.ext4 -L $LABEL $DEVICE
+mkdir -p $LABEL
+mount $DEVICE $LABEL
+
+echo -e ${GREEN}Start restore partition at `date`...${NC}
+tar xfpz $FILE --xattrs
+echo -e ${GREEN}Done at `date`${NC}
+
+umount $LABEL
+rm -d $LABEL
