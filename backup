@@ -8,8 +8,8 @@ NC='\033[0m' # No color
 
 # Show usage
 if [ -z "$1" ] ; then
-  echo -e "Usage: sudo ./backup ${YELLOW}sda3${NC}"
-  echo -e "Creates ${YELLOW}label.tar.gz${NC} with ${YELLOW}label${NC} of selected partition"
+  echo -e "Usage: sudo ./backup ${YELLOW}sda3 [subvol]${NC}"
+  echo -e "Creates ${YELLOW}label.tar.gz${NC} with ${YELLOW}label${NC} of selected partition or of btrfs subvol if it present"
   exit
 fi
 
@@ -18,17 +18,26 @@ PARTITION=$1
 DEVICE=/dev/$PARTITION
 
 # Extract partition label by selected partition
-LABEL=`lsblk -fl | grep $PARTITION | awk '{print \$3}'`
-if [ -z "$LABEL" ] ; then
-  echo -e ${RED}Partition ${YELLOW}$PARTITION${RED} not found${NC}
-  exit
+if [ -z "$2" ] ; then
+  OBJECT="partition"
+  LABEL=`lsblk -fl | grep $PARTITION | awk '{print \$3}'`
+  if [ -z "$LABEL" ] ; then
+    echo -e ${RED}Partition ${YELLOW}$PARTITION${RED} not found${NC}
+    exit
+  fi
+
+# Selected subvolume
+else
+  OBJECT="btrfs subvolume"
+  LABEL=$2
+  OPTION="-o subvol=@$LABEL"
 fi
 
 # Backup selected partition
 mkdir -p $LABEL
-mount $DEVICE $LABEL
+mount $DEVICE $OPTION $LABEL
 
-echo -e ${GREEN}Start backup partition at `date`...${NC}
+echo -e ${GREEN}Start backup $OBJECT at `date`...${NC}
 tar cfp - $LABEL | pigz -1 > $LABEL.tar.gz
 echo -e ${GREEN}Done at `date`${NC}
 

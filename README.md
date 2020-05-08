@@ -3,15 +3,21 @@ Simple bash scripts to backup and restore partitions. To backup current operatio
 
 ## Backup
 
-`sudo ./backup sda3`
+`sudo ./backup sda3 [subvol]`
 
-Creates `label.tar.gz`, where `label` is label of selected partition.
+Creates `label.tar.gz` with `label` of selected partition or of btrfs `subvol` if it present.
 
 ## Restore
 
-`sudo ./restore sda3 label.tar.gz`
+`sudo ./restore sda3 label.tar.gz [subvol]`
 
-Formats selected partition to `ext4` and writes content of `label.tar.gz` with new partition `label`.
+Formats selected partition to ext4 or recreate btrfs `subvol` if it present, then writes content of `label.tar.gz`.
+
+## Recreate btrfs subvolume
+
+`sudo ./recreate-subvol sda3 subvol`
+
+Recreates btrfs `subvol` on selected partition.
 
 ## Dependance
 

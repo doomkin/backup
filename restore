@@ -8,8 +8,8 @@ NC='\033[0m' # No color
 
 # Show usage
 if [ -z "$1" ] || [ -z "$2" ] ; then
-  echo -e "Usage: sudo ./restore ${YELLOW}sda3 label.tar.gz${NC}"
-  echo -e "Formats selected partition to ext4 and writes content of ${YELLOW}label.tar.gz${NC} with new partition ${YELLOW}label${NC}"
+  echo -e "Usage: sudo ./restore ${YELLOW}sda3 label.tar.gz [subvol]${NC}"
+  echo -e "Formats selected partition to ext4 or recreate btrfs ${YELLOW}subvol${NC} if it present, then writes content of ${YELLOW}label.tar.gz${NC}"
   exit
 fi
 
@@ -24,16 +24,42 @@ if [ -z "$PARTITION_ROW" ] ; then
   exit
 fi
 
-# Extract partition label from file name
+# Archive file name
 FILE=$2
-LABEL=`echo $(basename $FILE) | cut -d "." -f 1`
 
-# Restore FILE to selected partition
-mkfs.ext4 -L $LABEL $DEVICE
-mkdir -p $LABEL
-mount $DEVICE $LABEL
+# Extract partition label from file name
+if [ -z "$3" ] ; then
+  OBJECT="partition"
+  LABEL=`echo $(basename $FILE) | cut -d "." -f 1`
 
-echo -e ${GREEN}Start restore partition at `date`...${NC}
+  # Format partition to ext4
+  mkfs.ext4 -L $LABEL $DEVICE
+
+  # Mount partition
+  mkdir -p $LABEL
+  mount $DEVICE $LABEL
+
+# Selected btrfs subvolume
+else
+  OBJECT="btrfs subvolume"
+  LABEL=$3
+
+  # Recreate btrfs subvolume
+  BTRFS_ROOT=linux
+  mkdir $BTRFS_ROOT
+  mount $DEVICE -o subvolid=5 $BTRFS_ROOT
+  btrfs subvolume delete -c $BTRFS_ROOT/@$LABEL
+  btrfs subvolume create $BTRFS_ROOT/@$LABEL
+  umount $BTRFS_ROOT
+  rm -d $BTRFS_ROOT
+
+  # Mount btrfs subvol
+  mkdir $LABEL
+  mount -o subvol=@$LABEL $DEVICE $LABEL
+fi
+
+# Restore archive content to selected partition
+echo -e ${GREEN}Start restore $OBJECT at `date`...${NC}
 tar xfpz $FILE --xattrs
 echo -e ${GREEN}Done at `date`${NC}
 
