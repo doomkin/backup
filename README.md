@@ -1,5 +1,5 @@
 # backup
-Simple bash scripts to backup and restore partitions. To backup current operation system reboot to another operation system. For example into [Arch](https://www.archlinux.org/download/) USB flash drive.
+Simple bash scripts to backup and restore partitions and btrfs subvolumes. To backup current operation system reboot to another operation system. For example into [Arch](https://www.archlinux.org/download/) USB flash drive.
 
 ## Backup
 
